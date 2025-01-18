@@ -4,72 +4,37 @@ const bcrypt = require('bcrypt')
 
 //register
 
-exports.registerController = async(req,res)=>{
-    console.log("Inside registerController");
-    const {username,email,password,role} = req.body
-    console.log(username,email,password,role);
+exports.registerController = async(req, res) => {
+    const { username, email, password, role, services } = req.body;
     
-    try{
-        const extistingUser = await Users.findOne({email});
-        if (extistingUser){
-            return res.status(406).json("User already exists ... Please Login");
+    try {
+        const existingUser = await Users.findOne({ email });
+        if (existingUser) {
+            return res.status(406).json("User already exists. Please login.");
         }
-        //hash password
-        const hashedPassword = await bcrypt.hash(password,10);
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         const newUser = new Users({
-            username,email,password:hashedPassword,role
+            username,
+            email,
+            password: hashedPassword,
+            role,
+            services: role === 'provider' ? services : [], // Only assign services to providers
         });
 
         await newUser.save();
-        res.status(200).json(newUser)
-    } catch (err){
+        res.status(200).json(newUser);
+    } catch (err) {
         console.error(err);
-        res.status(500).json('An error Occured while Registering the user.');
+        res.status(500).json('An error occurred while registering the user.');
     }
-}
+};
 
-//login
 
-// exports.loginController = async (req, res) => {
-//     console.log("Inside LoginController");
-//     const { email, password } = req.body;
-//     console.log(email, password);
 
-//     try {
-//         // Check if user exists
-//         const existingUser = await Users.findOne({ email });
-//         if (!existingUser) {
-//             return res.status(404).json("Invalid Email/Password");
-//         }
 
-//         // Compare passwords
-//         const isPasswordValid = await bcrypt.compare(password, existingUser.password);
-//         if (!isPasswordValid) {
-//             return res.status(404).json("Invalid Email/Password");
-//         }
-
-//         // Generate JWT token
-//         const token = jwt.sign(
-//             { userId: existingUser._id },
-//             process.env.JWTPASSWORD,
-//             { expiresIn: '1h' } // Optional: Token expiration
-//         );
-
-//         // Respond with token and user details
-//         res.status(202).json({
-//             user: {
-//                 username: existingUser.username,
-//                 email: existingUser.email,
-//                 role: existingUser.role
-//             },
-//             token
-//         });
-//     } catch (err) {
-//         console.error(err);
-//         res.status(500).json("An error occurred during login.");
-//     }
-// };
 
 exports.loginController = async (req, res) => {
     console.log("loginController");

@@ -6,7 +6,6 @@ exports.addbookingController = async (req, res) => {
     const userId = req.userId; // Assuming middleware sets req.userId after JWT validation
     console.log('User ID:', userId);
     console.log('Request Body:', req.body);
-
     const { service, provider, date, bookingStatus } = req.body;    
     if (!service || !provider || !date ) {
         console.log("service",service)
@@ -16,20 +15,14 @@ exports.addbookingController = async (req, res) => {
 
         return res.status(400).json('All fields are required for booking.');
     }
-
     try {
-        
-
         // Create a new booking
         const newBooking = new booking({
             service: service,
             provider: provider,
             date:date,
-            bookingStatus:bookingStatus,
-           
+            bookingStatus:bookingStatus,  
         });
-
-        // Save the booking to the database
         await newBooking.save();
 
         res.status(201).json({

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema({
     username: {
@@ -19,9 +19,12 @@ const UserSchema = new mongoose.Schema({
       enum: ['owner', 'provider'],
       required: true,
     },
-  }, { timestamps: true }); 
+    services: {
+      type: [String], // This field will store the services the provider offers
+      required: function() { return this.role === 'provider'; }, // Only required for providers
+    }
+  }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
 
 module.exports = User;
-  
