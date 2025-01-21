@@ -1,32 +1,74 @@
-const booking = require('../models/bookingsModel');
+
+const Booking = require('../models/bookingsModel'); 
+const User = require('../models/userModel'); 
 
 
 exports.addbookingController = async (req, res) => {
     console.log('Inside addbookingController');
-    const userId = req.userId; // Assuming middleware sets req.userId after JWT validation
-    console.log('User ID:', userId);
+    const ownerId = req.userId;  // Assuming JWT middleware extracts the ownerId
+    console.log('Owner ID:', ownerId);
     console.log('Request Body:', req.body);
-    const { service, provider, date, bookingStatus } = req.body;    
-    if (!service || !provider || !date ) {
-        console.log("service",service)
-        console.log("provider",provider)
-        console.log("date",date)
-        console.log("bookingStatus",bookingStatus)
 
+    // Get services, date, and bookingStatus from request body
+    const { service, date, bookingStatus } = req.body;
+
+    // Validate input
+    if (!service || !date) {
+        console.error('Missing required fields: service or date');
         return res.status(400).json('All fields are required for booking.');
     }
+
+    // Ensure that service is an array of strings (if multiple services)
+    if (!Array.isArray(service)) {
+        console.error('Service must be an array.');
+        return res.status(400).json('Invalid service format. Services should be an array of strings.');
+    }
+
+    // Ensure that all elements in the service array are strings
+    if (service.some(s => typeof s !== 'string')) {
+        console.error('Each service must be a string.');
+        return res.status(400).json('Each service must be a string.');
+    }
+
     try {
-        // Create a new booking
-        const newBooking = new booking({
-            service: service,
-            provider: provider,
-            date:date,
-            bookingStatus:bookingStatus,  
+        // Log the services being searched
+        console.log('Services being searched:', service);
+        console.log('Type of services:', Array.isArray(service));
+
+
+
+        // Find the provider who offers all the requested services
+        const provider = await User.findOne({
+            services: { $all: service }, // Match service IDs
+            role: 'provider',
         });
+        console.log('Provider Query:', {
+            services: { $all: service },
+            role: 'provider',
+        });
+
+        if (!provider) {
+            console.error('No provider found for services:', service);
+            return res.status(404).json('No provider found for the requested services.');
+        }
+
+        // Log the provider found
+        console.log('Provider found:', provider);
+
+        // Create a new booking with the array of services
+        const newBooking = new Booking({
+            service, // Store service as an array of strings
+            providerId: provider._id,  // Set the providerId to the found provider
+            ownerId,                   // Set the ownerId to the current logged-in owner
+            date,
+            bookingStatus: bookingStatus || 0, // Default to Pending
+        });
+
         await newBooking.save();
 
+        // Respond with success message
         res.status(201).json({
-            message: 'Booking  successfully!',
+            message: 'Booking added successfully!',
             booking: newBooking,
         });
     } catch (err) {
@@ -35,15 +77,41 @@ exports.addbookingController = async (req, res) => {
     }
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 exports.getbookingController = async (req, res) => {
     console.log("Inside getbookingController");
+    const providerId = req.userId;  // Assuming JWT middleware sets req.userId
+    console.log('Provider ID:', providerId);
+
     try {
-        const {  username } = req.body;      
-           const allbooking = await booking.find({provider:username});
-        console.log("bookings retrieved from database:", allbooking); // Add this log
-        res.status(200).json(allbooking);
+        // Fetch all bookings for the logged-in provider
+        const allBookings = await Booking.find({ providerId: providerId });
+
+        if (!allBookings || allBookings.length === 0) {
+            return res.status(404).json('No bookings found for this provider.');
+        }
+
+        console.log("Bookings retrieved from database:", allBookings);
+        res.status(200).json(allBookings);
     } catch (err) {
-        console.error("Error fetching bookings:", err); // Add this log
+        console.error("Error fetching bookings:", err);
         res.status(500).json("An error occurred while fetching bookings.");
     }
 };

@@ -4,10 +4,16 @@ const bcrypt = require('bcrypt')
 
 //register
 
-exports.registerController = async(req, res) => {
+const Services = require('../models/serviceSchema'); // Assuming you have a Service model
+
+exports.registerController = async (req, res) => {
     const { username, email, password, role, services } = req.body;
-    
+
     try {
+        // Log input for debugging
+        console.log("Request Data:", req.body);
+
+        // Check if user already exists
         const existingUser = await Users.findOne({ email });
         if (existingUser) {
             return res.status(406).json("User already exists. Please login.");
@@ -16,24 +22,45 @@ exports.registerController = async(req, res) => {
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        let serviceIds = [];
+        if (role === 'provider' && services && services.length > 0) {
+            // Log services for debugging
+            console.log("Requested Services:", services);
+
+            // Fetch service IDs based on service names
+            const matchedServices = await Services.find({ name: { $in: services } });
+            console.log("Matched Services:", matchedServices);
+
+            // Map service names to IDs
+            serviceIds = matchedServices.map(service => service._id);
+
+            // Log IDs for debugging
+            console.log("Service IDs:", serviceIds);
+
+            // Check if all services were found
+            if (serviceIds.length !== services.length) {
+                return res.status(400).json("Some services provided are invalid.");
+            }
+        }
+
+        // Create a new user
         const newUser = new Users({
             username,
             email,
             password: hashedPassword,
             role,
-            services: role === 'provider' ? services : [], // Only assign services to providers
+            services: role === 'provider' ? serviceIds : [], // Use service IDs for providers
         });
 
+        // Save the new user to the database
         await newUser.save();
         res.status(200).json(newUser);
     } catch (err) {
-        console.error(err);
+        // Log the error
+        console.error("Error during registration:", err);
         res.status(500).json('An error occurred while registering the user.');
     }
 };
-
-
-
 
 
 exports.loginController = async (req, res) => {
