@@ -37,6 +37,6 @@ router.get('/get-services',jwtMiddleware,serviceController.getServicesController
 
 router.get('/get-providers',jwtMiddleware,providerController.getProvidersController)
 
-
+router.post('/providers-by-service', jwtMiddleware, booking.getProvidersByServicesController)
 
 module.exports = router

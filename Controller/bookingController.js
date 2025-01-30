@@ -1,4 +1,3 @@
-
 const Booking = require('../models/bookingsModel'); 
 const User = require('../models/userModel'); 
 
@@ -10,7 +9,7 @@ exports.addbookingController = async (req, res) => {
     console.log('Request Body:', req.body);
 
     // Get services, date, and bookingStatus from request body
-    const { service, date, bookingStatus } = req.body;
+    const { service, date, bookingStatus, providerId } = req.body;
 
     // Validate input
     if (!service || !date) {
@@ -35,21 +34,18 @@ exports.addbookingController = async (req, res) => {
         console.log('Services being searched:', service);
         console.log('Type of services:', Array.isArray(service));
 
-
-
-        // Find the provider who offers all the requested services
-        const provider = await User.findOne({
-            services: { $all: service }, // Match service IDs
-            role: 'provider',
-        });
-        console.log('Provider Query:', {
-            services: { $all: service },
-            role: 'provider',
-        });
-
-        if (!provider) {
-            console.error('No provider found for services:', service);
-            return res.status(404).json('No provider found for the requested services.');
+        let provider;
+        if (providerId) {
+            provider = await User.findOne({ _id: providerId, services: { $all: service }, role: 'provider' });
+            if (!provider) {
+                return res.status(404).json('Invalid provider or services.');
+            }
+        } else {
+            provider = await User.findOne({ services: { $all: service }, role: 'provider' });
+            if (!provider) {
+                console.error('No provider found for services:', service);
+                return res.status(404).json('No provider found for the requested services.');
+            }
         }
 
         // Log the provider found
@@ -77,23 +73,21 @@ exports.addbookingController = async (req, res) => {
     }
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+exports.getProvidersByServicesController = async (req, res) => {
+    const { service } = req.body;
+    if (!service || !Array.isArray(service) || service.length === 0) {
+        return res.status(400).json('Services are required and must be an array.');
+    }
+    try {
+        const providers = await User.find({ role: 'provider', services: { $all: service } });
+        if (!providers.length) {
+            return res.status(404).json('No matching providers found.');
+        }
+        res.status(200).json(providers);
+    } catch (err) {
+        res.status(500).json('Error fetching providers.');
+    }
+};
 
 exports.getbookingController = async (req, res) => {
     console.log("Inside getbookingController");
