@@ -38,7 +38,7 @@ exports.addbookingController = async (req, res) => {
         if (providerId) {
             provider = await User.findOne({ _id: providerId, services: { $all: service }, role: 'provider' });
             if (!provider) {
-                return res.status(404).json('Invalid provider or services.');
+                return res.status(404).json('Invalid provider ID or services provided.');
             }
         } else {
             provider = await User.findOne({ services: { $all: service }, role: 'provider' });
