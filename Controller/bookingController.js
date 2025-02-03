@@ -78,22 +78,21 @@ exports.addbookingController = async (req, res) => {
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+exports.getProvidersByServicesController = async (req, res) => {
+    const { service } = req.body;
+    if (!service || !Array.isArray(service) || service.length === 0) {
+        return res.status(400).json('Services are required and must be an array.');
+    }
+    try {
+        const providers = await User.find({ role: 'provider', services: { $all: service } });
+        if (!providers.length) {
+            return res.status(404).json('No matching providers found.');
+        }
+        res.status(200).json(providers);
+    } catch (err) {
+        res.status(500).json('Error fetching providers.');
+    }
+};
 
 exports.getbookingController = async (req, res) => {
     console.log("Inside getbookingController");
@@ -115,4 +114,21 @@ exports.getbookingController = async (req, res) => {
         res.status(500).json("An error occurred while fetching bookings.");
     }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
