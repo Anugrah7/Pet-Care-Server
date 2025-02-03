@@ -46,30 +46,31 @@ exports.addPetController = async (req, res) => {
 exports.getPetController = async (req, res) => {
     console.log("Inside getPetController");
     try {
+        const userId = req.userId; // Get logged-in user's ID from middleware
+        const { petId } = req.params;
 
-        const {petId} = req.params;
-
-         if (petId) {
-            // If petId is provided, fetch the specific pet
-            const pet = await addedPet.findOne({ petId: petId });
+        if (petId) {
+            // Fetch specific pet, but ensure it belongs to the logged-in user
+            const pet = await addedPet.findOne({ petId: petId, ownerId: userId });
             
             if (!pet) {
-                return res.status(404).json({ message: "Pet not found" });
+                return res.status(404).json({ message: "Pet not found or does not belong to you." });
             }
             
-            console.log("Pet retrieved from database:", pet); // Log the retrieved pet
-            return res.status(200).json(pet); // Return the pet details
+            console.log("Pet retrieved from database:", pet);
+            return res.status(200).json(pet);
         } else {
-            // If no petId is provided, fetch all pets
-            const allPet = await addedPet.find();
-            console.log("Pets retrieved from database:", allPet); // Log the retrieved pets
-            return res.status(200).json(allPet); // Return all pets
+            // Fetch all pets belonging to the logged-in user
+            const userPets = await addedPet.find({ ownerId: userId });
+            console.log("Pets retrieved from database:", userPets);
+            return res.status(200).json(userPets);
         }
     } catch (err) {
-        console.error("Error fetching pets:", err); // Log the error
+        console.error("Error fetching pets:", err);
         res.status(500).json("An error occurred while fetching pets.");
     }
 };
+
 
 exports.removePetController = async (req, res) => {
     console.log("Inside removePetController");

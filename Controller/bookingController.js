@@ -1,3 +1,4 @@
+
 const Booking = require('../models/bookingsModel'); 
 const User = require('../models/userModel'); 
 
@@ -9,7 +10,7 @@ exports.addbookingController = async (req, res) => {
     console.log('Request Body:', req.body);
 
     // Get services, date, and bookingStatus from request body
-    const { service, date, bookingStatus, providerId } = req.body;
+    const { service, date, bookingStatus } = req.body;
 
     // Validate input
     if (!service || !date) {
@@ -34,18 +35,21 @@ exports.addbookingController = async (req, res) => {
         console.log('Services being searched:', service);
         console.log('Type of services:', Array.isArray(service));
 
-        let provider;
-        if (providerId) {
-            provider = await User.findOne({ _id: providerId, services: { $all: service }, role: 'provider' });
-            if (!provider) {
-                return res.status(404).json('Invalid provider ID or services provided.');
-            }
-        } else {
-            provider = await User.findOne({ services: { $all: service }, role: 'provider' });
-            if (!provider) {
-                console.error('No provider found for services:', service);
-                return res.status(404).json('No provider found for the requested services.');
-            }
+
+
+        // Find the provider who offers all the requested services
+        const provider = await User.findOne({
+            services: { $all: service }, // Match service IDs
+            role: 'provider',
+        });
+        console.log('Provider Query:', {
+            services: { $all: service },
+            role: 'provider',
+        });
+
+        if (!provider) {
+            console.error('No provider found for services:', service);
+            return res.status(404).json('No provider found for the requested services.');
         }
 
         // Log the provider found
@@ -72,6 +76,7 @@ exports.addbookingController = async (req, res) => {
         res.status(500).json('An error occurred while adding the booking.');
     }
 };
+
 
 exports.getProvidersByServicesController = async (req, res) => {
     const { service } = req.body;
@@ -109,4 +114,21 @@ exports.getbookingController = async (req, res) => {
         res.status(500).json("An error occurred while fetching bookings.");
     }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

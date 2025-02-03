@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 
 const jwtMiddleware = (req, res, next) => {
@@ -20,8 +21,11 @@ const jwtMiddleware = (req, res, next) => {
         const jwtResponse = jwt.verify(token, process.env.JWTPASSWORD);
         console.log("JWT Response:", jwtResponse);
 
+        // Correctly create ObjectId from the userId in JWT (use `new` keyword)
+        const userId = new mongoose.Types.ObjectId(jwtResponse.userId);
+
         // Attach user ID and role to request object
-        req.userId = jwtResponse.userId;
+        req.userId = userId;
         req.role = jwtResponse.role;
 
         // Proceed to the next middleware/controller
